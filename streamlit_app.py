@@ -42,7 +42,8 @@ def record_transaction(selected_option, integer_value):
     save_data(st.session_state.savers)
 
 def delete_transaction(index):
-    tr = st.session_state.savers["transactions"].pop(index)
+    n = len(st.session_state.savers["transactions"])
+    tr = st.session_state.savers["transactions"].pop(n-index-1)
     st.session_state.savers[tr["owed to"]] -= tr["savers"]
     save_data(st.session_state.savers)
     st.rerun()
@@ -78,7 +79,7 @@ st.subheader(f"{ower} owes {owed_to} {abs(st.session_state.savers[users[0]] - st
 
 st.header("Transactions")
 
-for ind, tr in enumerate(st.session_state.savers["transactions"]):
+for ind, tr in enumerate(st.session_state.savers["transactions"][::-1]):
     tr_col1, tr_col2 = st.columns(2)
     with tr_col1:
         st.write(tr)
