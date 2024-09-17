@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import os
+from datetime import datetime
 
 users = ["Sahiti", "Shreyas"]
 options = ["Sahiti owes Shreyas", "Shreyas owes Sahiti"]
@@ -19,9 +20,10 @@ def load_data():
         savers = {}
         for user in users:
             savers[user] = 0
+        savers["transactions"] = []
         return savers
 
-savers = load_data()
+st.session_state.savers = load_data()
 
 st.title("Saver Bot")
 st.markdown("""
@@ -34,8 +36,17 @@ def record_transaction(selected_option, integer_value):
         user = "Shreyas"
     else:
         user = "Sahiti"
-    savers[user] += integer_value
-    save_data(savers)
+    st.session_state.savers[user] += integer_value
+    current_datetime = datetime.now()
+    st.session_state.savers["transactions"].append({"owed to": user, "savers": integer_value, "date": current_datetime.strftime('%I:%M%p on %B %d, %Y')})
+    save_data(st.session_state.savers)
+
+def delete_transaction(index):
+    tr = st.session_state.savers["transactions"].pop(index)
+    st.session_state.savers[tr["owed to"]] -= tr["savers"]
+    save_data(st.session_state.savers)
+    st.rerun()
+
 
 col1, col2 = st.columns(2)
 
@@ -58,5 +69,19 @@ with col22:
 
 
 st.header("Current Balance")
-st.write(savers)
-st.subheader(f"{users[0] if savers[users[0]] < savers[users[1]] else users[1]} owes {users[0] if savers[users[0]] > savers[users[1]] else users[1]} {abs(savers[users[0]] - savers[users[1]])} savers")
+balances = st.session_state.savers.copy()
+balances.pop("transactions")
+st.write(balances)
+ower = users[0] if st.session_state.savers[users[0]] < st.session_state.savers[users[1]] else users[1]
+owed_to = users[0] if users[0] != ower else users[1]
+st.subheader(f"{ower} owes {owed_to} {abs(st.session_state.savers[users[0]] - st.session_state.savers[users[1]])} savers")
+
+st.header("Transactions")
+
+for ind, tr in enumerate(st.session_state.savers["transactions"]):
+    tr_col1, tr_col2 = st.columns(2)
+    with tr_col1:
+        st.write(tr)
+    with tr_col2:
+        if st.button("🗑", key=ind):
+            delete_transaction(ind)
